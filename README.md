@@ -1,1 +1,3 @@
 # examples
+
+Some strange examples.
