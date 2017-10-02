@@ -40,7 +40,7 @@ class CONSTANTS {
     }
 
     static get BASEURL() {
-        return 'library/api/';
+        return 'http://192.168.10.235/up-concepta/web/app.php/library/api/';
     }
 }
 
@@ -136,7 +136,6 @@ class StaticPrepareRequestMethods {
                     if (parameters.itemName === '') {
                         throw new Error(errorMessage + ' Nothing to remove.');
                     }
-                    break;
             }
             isEdit = true;
             requestParameters.objectName = parameters.itemName;
@@ -197,7 +196,6 @@ class ButtonsClickHandler {
                         itemType: this.type
                     });
                 }
-                break;
         }
 
         if (typeof request === 'object') {
@@ -252,11 +250,9 @@ class modalWindow {
                     this.targetIsModal = true;
                     this.controlAction = this.target.dataset.action;
                     return 'control';
-                    break;
                 case this.rolePointer:
                     this.targetIsModal = true;
                     return 'modal';
-                    break;
                 default:
                     this.target = this.target.parentNode;
             }
@@ -340,7 +336,6 @@ class RequestProcessor {
                 } else {
                     throw new Error(errorMessage);
                 }
-                break;
         }
         return this._makeRequest();
     }
