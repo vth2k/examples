@@ -7,10 +7,11 @@ function clickEventListener(event) {
     let modal = new modalWindow(event);
 
     if (modal.getEventType() === 'control') {
-        let handler = new ButtonsClickHandler(modal.returnEventAction());
+        let handler = new ButtonsClickHandler(modal.returnEventAction())
+            , form = new Form(event);
 
         handler.showAction();
-        handler.handle();
+        handler.handle(form.formName);
     }
     if (!modal.isModal()) {
         modal.toggle();
@@ -21,8 +22,10 @@ function changeEventListener(event) {
     let changedNode = event.target.name;
 
     if (changedNode === 'file') {
-        let handler = new ButtonsClickHandler(changedNode);
-        handler.handle();
+        let handler = new ButtonsClickHandler(changedNode)
+            , form = new Form(event);
+
+        handler.handle(form.formName);
     }
 }
 
@@ -41,6 +44,16 @@ class CONSTANTS {
 
     static get BASEURL() {
         return 'http://192.168.10.235/up-concepta/web/app.php/library/api/';
+    }
+}
+
+class Form {
+    constructor(event) {
+        this.formNodeName = event.target.closest('form').name;
+    }
+
+    get formName() {
+        return this.formNodeName;
     }
 }
 
@@ -152,14 +165,17 @@ class ButtonsClickHandler {
         this.action = action;
         this.value = '';
         this.type = CONSTANTS.FOLDER;
+        this.formName = '';
     }
 
     showAction() {
         console.log(this.action);
     }
 
-    handle() {
+    handle(formName = this.formName) {
         let request;
+        this.formName = formName;
+        console.log(this.formName);
 
         switch (this.action) {
             case 'add':
@@ -363,3 +379,26 @@ class RequestProcessor {
         return new Request(CONSTANTS.BASEURL + this.requestController, requestParameters);
     }
 }
+
+(function(e){
+    e.closest = e.closest || function(css){
+        let node = this;
+
+        while (node) {
+            if (node.matches(css)) return node;
+            else node = node.parentElement;
+        }
+        return null;
+    }
+})(Element.prototype);
+
+(function(e){
+
+    e.matches || (e.matches=e.matchesSelector||function(selector){
+        let matches = document.querySelectorAll(selector), th = this;
+        return Array.prototype.some.call(matches, function(e){
+            return e === th;
+        });
+    });
+
+})(Element.prototype);

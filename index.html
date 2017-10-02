@@ -7,17 +7,18 @@
 <body>
 <h1>Hello!</h1>
 <div data-role="modal" style="display: flex; border: 2px solid cornflowerblue;">I am the modal dialog window.
-    <form>
+    <form name="modalForm" style="display: flex; flex-direction: row;">
         <input type="text" name="add" value="new folder">
         <input type="text" name="type" value="folder">
         <input type="file" name="file" multiple accept="application/pdf">
+
+        <div id="buttonsInModal" style="display: flex; flex-direction: row;">
+            <div data-role="button" data-action="add" style="border: 2px dotted orangered">Add</div>
+            <div data-role="button" data-action="clear" style="border: 2px dotted orangered">Clear</div>
+            <div data-role="button" data-action="remove" style="border: 2px dotted orangered">Remove</div>
+            <div data-role="button" data-action="list" style="border: 2px dotted orange">Show</div>
+        </div>
     </form>
-    <div id="buttonsInModal" style="display: flex; flex-direction: row;">
-        <div data-role="button" data-action="add" style="border: 2px dotted orangered">Add</div>
-        <div data-role="button" data-action="clear" style="border: 2px dotted orangered">Clear</div>
-        <div data-role="button" data-action="remove" style="border: 2px dotted orangered">Remove</div>
-        <div data-role="button" data-action="list" style="border: 2px dotted orange">Show</div>
-    </div>
 </div>
 
 </body>
