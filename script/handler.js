@@ -200,20 +200,26 @@ class ButtonsClickHandler {
 
         if (typeof request === 'object') {
             fetch(request)
-                .then(function (response) {
-                    if (response.ok) {
-                        return response.json();
-                    }
-                    throw new Error('Network response is bad.');
-                })
-                .then(function (data) {
-                    console.log(data);
-                    return (data);
-                })
-                .catch(function (error) {
-                    console.log(error);
-                })
+                .then(this._checkResponse)
+                .then(this._showData)
+                .catch(this._showError);
         }
+    }
+
+    _checkResponse(response) {
+        if (response.ok) {
+            return response.json();
+        }
+        throw new Error('Network response is bad.');
+    }
+
+    _showData(data) {
+        console.log(data);
+        return (data);
+    }
+
+    _showError(error) {
+        console.log(error);
     }
 
     _notEmpty() {
