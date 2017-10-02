@@ -1,4 +1,4 @@
 # examples
 
-Some strange examples.
-Created without no particular reason.
+##Playing in examples on es6.
+Let's construct modal window handler with the control set.
