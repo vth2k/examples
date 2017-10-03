@@ -11,7 +11,9 @@ function clickEventListener(event) {
             , form = new Form(event);
 
         handler.showAction();
-        handler.handle(form.formName);
+        if (form.exists()) {
+            handler.handle(form.formName);
+        }
     }
     if (!modal.isModal()) {
         modal.toggle();
@@ -25,7 +27,9 @@ function changeEventListener(event) {
         let handler = new ButtonsClickHandler(changedNode)
             , form = new Form(event);
 
-        handler.handle(form.formName);
+        if (form.exists()) {
+            handler.handle(form.formName);
+        }
     }
 }
 
@@ -49,114 +53,24 @@ class CONSTANTS {
 
 class Form {
     constructor(event) {
-        this.formNodeName = event.target.closest('form').name;
+        let target = event.target;
+        this.formNodeName = '';
+
+        while (target.parentNode) {
+            if (target.tagName === 'form'.toUpperCase()) {
+                this.formNodeName = target.name;
+                break;
+            }
+            target = target.parentNode;
+        }
+    }
+
+    exists() {
+        return this.formNodeName !== '';
     }
 
     get formName() {
         return this.formNodeName;
-    }
-}
-
-class StaticFormMethods {
-    static get itemName() {
-        return document.forms[0].add.value;
-    }
-
-    static set itemName(value) {
-        document.forms[0].add.value = value;
-    }
-
-    static get itemType() {
-        return document.forms[0].type.value;
-    }
-
-    static set itemType(value) {
-        document.forms[0].type.value = value;
-    }
-
-    static get fileSelect() {
-        return document.forms[0].file.files;
-    }
-
-    static set fileSelect(value) {
-        document.forms[0].file.value = value;
-    }
-
-    static getType() {
-        return this.fileSelect.length > 0 ? CONSTANTS.FILE : CONSTANTS.FOLDER;
-    }
-
-    static setAsFile() {
-        this.itemName = this.composeFileNames(document.forms[0].file);
-        this.itemType = CONSTANTS.FILE;
-    }
-
-    static composeFileNames(formFileElement) {
-        return [].map.call(formFileElement.files, file => file.name).join(CONSTANTS.SPLITTER);
-    }
-}
-
-class StaticPrepareRequestMethods {
-    static createFormDataFromFiles(fileNode) {
-        let formData = new FormData();
-
-        for (let i = 0; i < fileNode.files.length; i++) {
-            formData.append(`file${i}`, fileNode.files[i]);
-        }
-        return formData;
-    }
-
-    static setGetParameters(parameters) {
-        let isGet = false
-            , requestParameters = {}
-            , requestController;
-
-        if (parameters.hasOwnProperty('itemName')) {
-            if (parameters.itemName === '') {
-                requestParameters.action = 'list';
-                requestParameters.fileName = parameters.itemName;
-                requestController = 'getJsonList';
-            } else {
-                requestParameters.action = 'book';
-                requestParameters.fileName = parameters.itemName;
-                requestController = 'getJsonBook';
-            }
-            isGet = true;
-            requestParameters.path = parameters.path;
-        }
-        return {isGet: isGet, parameters: requestParameters, url: requestController};
-    }
-
-    static setEditParameters(parameters) {
-        let errorMessage = `Error. `;
-        let isEdit = false
-            , withFile = false
-            , requestParameters = {}
-            , requestController = 'editList';
-
-        if (parameters.hasOwnProperty('actionType')) {
-            switch (parameters.actionType) {
-                case 'add':
-                    if (parameters.itemType === 'file') {
-                        if (parameters.itemName === '') {
-                            throw new Error(errorMessage + 'Can not add file without the name.')
-                        } else {
-                            withFile = true;
-                        }
-                    }
-                    break;
-                case 'remove':
-                    if (parameters.itemName === '') {
-                        throw new Error(errorMessage + ' Nothing to remove.');
-                    }
-            }
-            isEdit = true;
-            requestParameters.objectName = parameters.itemName;
-            requestParameters.objectType = parameters.itemType;
-            requestParameters.action = parameters.actionType;
-            requestParameters.path = parameters.path;
-        }
-        return {isEdit: isEdit, parameters: requestParameters, url: requestController, withFile: withFile};
     }
 }
 
@@ -175,13 +89,13 @@ class ButtonsClickHandler {
     handle(formName = this.formName) {
         let request;
         this.formName = formName;
-        console.log(this.formName);
 
         switch (this.action) {
             case 'add':
-                this.value = StaticFormMethods.itemName;
-                this.type = StaticFormMethods.getType();
-
+                this.value = this._itemName;
+                this.type = this._getType();
+                console.log('value: ' + this.value);
+                console.log('type: ' + this.type);
                 if (this._notEmpty()) {
                     let editCallParameters = {
                         actionType: 'add',
@@ -189,14 +103,14 @@ class ButtonsClickHandler {
                         itemType: this.type
                     };
                     let requestBody = new RequestProcessor();
-                    request = requestBody.prepare('edit', '', editCallParameters);
+                    request = requestBody.prepare('edit', '', editCallParameters, this.formName);
                 }
                 break;
             case 'clear':
                 this._clearToDefault();
                 break;
             case 'file':
-                StaticFormMethods.setAsFile();
+                this._setAsFile();
                 break;
             case 'list':
                 let requestBody = new RequestProcessor();
@@ -210,7 +124,7 @@ class ButtonsClickHandler {
                         actionType: 'remove',
                         itemName: this.value,
                         itemType: this.type
-                    });
+                    }, this.formName);
                 }
         }
 
@@ -244,14 +158,51 @@ class ButtonsClickHandler {
 
     _clearToDefault() {
         this.value = '';
-        StaticFormMethods.itemName = this.value;
-        StaticFormMethods.fileSelect = this.value;
-        StaticFormMethods.itemType = CONSTANTS.FOLDER;
+        this._itemName = this.value;
+        this._fileSelect = this.value;
+        this._itemType = CONSTANTS.FOLDER;
     }
 
     _getRemoveParameters() {
-        this.value = StaticFormMethods.itemName;
-        this.type = StaticFormMethods.itemType;
+        this.value = this._itemName;
+        this.type = this._itemType;
+    }
+
+    get _itemName() {
+        return document[this.formName].add.value;
+    }
+
+    set _itemName(value) {
+        document[this.formName].add.value = value;
+    }
+
+    get _itemType() {
+        return document[this.formName].type.value;
+    }
+
+    set _itemType(value) {
+        document[this.formName].type.value = value;
+    }
+
+    get _fileSelect() {
+        return document[this.formName].file.files;
+    }
+
+    set _fileSelect(value) {
+        document[this.formName].file.value = value;
+    }
+
+    _composeFileNames() {
+        return [].map.call(document[this.formName].file.files, file => file.name).join(CONSTANTS.SPLITTER);
+    }
+
+    _setAsFile() {
+        this._itemName = this._composeFileNames();
+        this._itemType = CONSTANTS.FILE;
+    }
+
+    _getType() {
+        return this._fileSelect.length > 0 ? CONSTANTS.FILE : CONSTANTS.FOLDER;
     }
 }
 
@@ -316,18 +267,22 @@ class RequestProcessor {
         this.requestType = 'json';
         this.requestBody = '';
         this.requestController = '';
+        this.setParameters = {};
+        this.formPointer = '';
     }
 
-    prepare(action, path, others) {
+    prepare(action, path, others, formPointer = '') {
         let requestParameters
             , errorMessage = `Incorrect parameters provided in ${action} request.`;
+        this.formPointer = formPointer;
 
         switch (action) {
             case 'get':
-                requestParameters = StaticPrepareRequestMethods.setGetParameters({
+                this.setParameters = {
                     itemName: others.itemName,
                     path: path,
-                });
+                };
+                requestParameters = this._setGetParameters();
 
                 if (requestParameters.isGet) {
                     this.requestBody = requestParameters.parameters;
@@ -337,20 +292,25 @@ class RequestProcessor {
                 }
                 break;
             case 'edit':
-                requestParameters = StaticPrepareRequestMethods.setEditParameters({
+                this.setParameters = {
                     actionType: others.actionType,
                     itemName: others.itemName,
                     itemType: others.itemType,
                     path: path,
-                });
+                };
+                requestParameters = this._setEditParameters();
 
                 if (requestParameters.isEdit) {
                     if (requestParameters.withFile) {
-                        let formData = StaticPrepareRequestMethods.createFormDataFromFiles(document.forms[0].file);
-                        requestParameters.parameters.objectName = requestParameters.parameters.objectName.split(CONSTANTS.SPLITTER);
-                        formData.append('description', JSON.stringify(requestParameters.parameters));
-                        this.requestBody = formData;
-                        this.requestType = 'formData';
+                        if (this._formPointerNotEmpty()) {
+                            let formData = this._createFormDataFromFiles('file');
+                            requestParameters.parameters.objectName = requestParameters.parameters.objectName.split(CONSTANTS.SPLITTER);
+                            formData.append('description', JSON.stringify(requestParameters.parameters));
+                            this.requestBody = formData;
+                            this.requestType = 'formData';
+                        } else {
+                            throw new Error(errorMessage);
+                        }
                     } else {
                         this.requestBody = requestParameters.parameters;
                     }
@@ -378,27 +338,70 @@ class RequestProcessor {
         }
         return new Request(CONSTANTS.BASEURL + this.requestController, requestParameters);
     }
-}
 
-(function(e){
-    e.closest = e.closest || function(css){
-        let node = this;
-
-        while (node) {
-            if (node.matches(css)) return node;
-            else node = node.parentElement;
-        }
-        return null;
+    _formPointerNotEmpty() {
+        return this.formPointer !== '';
     }
-})(Element.prototype);
 
-(function(e){
+    _createFormDataFromFiles(fileNode) {
+        let formData = new FormData();
 
-    e.matches || (e.matches=e.matchesSelector||function(selector){
-        let matches = document.querySelectorAll(selector), th = this;
-        return Array.prototype.some.call(matches, function(e){
-            return e === th;
-        });
-    });
+        for (let i = 0; i < document[this.formPointer][fileNode].files.length; i++) {
+            formData.append(`file${i}`, document[this.formPointer][fileNode].files[i]);
+        }
+        return formData;
+    }
 
-})(Element.prototype);
+    _setGetParameters() {
+        let isGet = false
+            , requestParameters = {}
+            , requestController;
+
+        if (this.setParameters.hasOwnProperty('itemName')) {
+            if (this.setParameters.itemName === '') {
+                requestParameters.action = 'list';
+                requestParameters.fileName = this.setParameters.itemName;
+                requestController = 'getJsonList';
+            } else {
+                requestParameters.action = 'book';
+                requestParameters.fileName = this.setParameters.itemName;
+                requestController = 'getJsonBook';
+            }
+            isGet = true;
+            requestParameters.path = this.setParameters.path;
+        }
+        return {isGet: isGet, parameters: requestParameters, url: requestController};
+    }
+
+    _setEditParameters() {
+        let errorMessage = `Error. `;
+        let isEdit = false
+            , withFile = false
+            , requestParameters = {}
+            , requestController = 'editList';
+
+        if (this.setParameters.hasOwnProperty('actionType')) {
+            switch (this.setParameters.actionType) {
+                case 'add':
+                    if (this.setParameters.itemType === 'file') {
+                        if (this.setParameters.itemName === '') {
+                            throw new Error(errorMessage + 'Can not add file without the name.')
+                        } else {
+                            withFile = true;
+                        }
+                    }
+                    break;
+                case 'remove':
+                    if (this.setParameters.itemName === '') {
+                        throw new Error(errorMessage + ' Nothing to remove.');
+                    }
+            }
+            isEdit = true;
+            requestParameters.objectName = this.setParameters.itemName;
+            requestParameters.objectType = this.setParameters.itemType;
+            requestParameters.action = this.setParameters.actionType;
+            requestParameters.path = this.setParameters.path;
+        }
+        return {isEdit: isEdit, parameters: requestParameters, url: requestController, withFile: withFile};
+    }
+}
