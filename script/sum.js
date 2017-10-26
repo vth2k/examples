@@ -1,3 +1,4 @@
+//es2015 implementation
 function sumES6(...oargs) {
    let total = 0;
  
@@ -12,6 +13,7 @@ function sumES6(...oargs) {
    return summator(...oargs);
 }
 
+//es5 implementation
 function sumES5() {
   var total = 0;
   
